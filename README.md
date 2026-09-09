@@ -84,7 +84,12 @@ BraveTweaks is an independent, unofficial project. It is not affiliated with, as
 
 “Brave” and related names, marks, logos, and emblems are trademarks of their respective owners. The official Brave website is https://brave.com/.
 
-
 ---
 
+<br>
 
+<img width="1576" height="1321" alt="mainui" src="assets/mainui.jpg" />
+
+<br>
+
+<img width="1571" height="729" alt="dropdown" src="assets/dropdown.jpg" />
