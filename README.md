@@ -1,6 +1,6 @@
 # BraveTweaks
 
-BraveTweaks is a small Windows 11 utility for making a normal Brave installation behave as close as practical to Brave Origin.
+BraveTweaks is a small Windows 11 utility for making a normal Brave installation behave as close as practical to Brave Origin, with a few additional optional policy controls.
 
 Apply, Remove managed policies, and Restore require an explicit action. No registry changes are made when the GUI starts. Origin preset checks Origin's default-off feature and telemetry policies from brave-core; it does not apply them by itself.
 
