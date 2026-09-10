@@ -54,6 +54,8 @@ class OriginProfile:
         current_raw = store.read_value(policy.name)
         if current_raw is not None:
             return policy.name, CurrentValue(*current_raw), policy.value
+        # Older .reg files used renamed keys; treat those as the current value
+        # and compare against the legacy expected so they verify and update.
         for name, expected in policy.legacy_values:
             current_raw = store.read_value(name)
             if current_raw is not None:

@@ -157,6 +157,8 @@ class BraveDetector:
         if os.name != "nt":
             return None, None
 
+        # Win32 VERSIONINFO: VS_FIXEDFILEINFO for the 4-part version, then
+        # VarFileInfo\Translation to locate ProductName in StringFileInfo.
         try:
             version_dll = ctypes.WinDLL("version", use_last_error=True)
             get_size = version_dll.GetFileVersionInfoSizeW
@@ -194,6 +196,7 @@ class BraveDetector:
             version = None
             if query_value(buffer, "\\", ctypes.byref(value), ctypes.byref(value_size)):
                 fixed_info = ctypes.cast(value, ctypes.POINTER(_VSFixedFileInfo)).contents
+                # 0xFEEF04BD is VS_FFI_SIGNATURE; version is packed as two DWORDs.
                 if fixed_info.signature == 0xFEEF04BD:
                     major = fixed_info.file_version_ms >> 16
                     minor = fixed_info.file_version_ms & 0xFFFF
