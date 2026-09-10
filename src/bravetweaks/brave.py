@@ -66,10 +66,13 @@ def classify_product(executable: Path, product_name: str | None = None) -> str:
 
 
 def target_browser(installations: Iterable[BraveInstallation]) -> BraveInstallation | None:
+    unknown: BraveInstallation | None = None
     for installation in installations:
         if installation.is_browser:
             return installation
-    return None
+        if unknown is None and not installation.is_origin:
+            unknown = installation
+    return unknown
 
 
 class BraveDetector:

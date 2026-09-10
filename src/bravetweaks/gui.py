@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__
-from .brave import BraveDetector, BraveInstallation, target_browser
+from .brave import BraveDetector, BraveInstallation, PRODUCT_UNKNOWN, target_browser
 from .config import AppConfig
 from .elevation import ensure_elevated
 from .policies import CATEGORY_TITLES, PolicyDefinition, all_policies
@@ -40,9 +40,9 @@ _ORIGIN_ONLY_MESSAGE = (
     "BraveTweaks applies Windows policies to regular Brave. "
     "Brave Origin is a separate product and is not a valid apply target."
 )
-_SHARED_HIVE_MESSAGE = (
-    "Brave Origin is not the apply target, but it reads the same policy hive "
-    "and will also show as managed."
+_UNCLASSIFIED_TARGET_MESSAGE = (
+    "This brave.exe could not be classified as Brave or Brave Origin. "
+    "It will still be used as the apply target."
 )
 _STYLE_SHEET = """
 QMainWindow {
@@ -437,7 +437,14 @@ class BraveTweaksWindow(QMainWindow):
         self.statusBar().showMessage(status)
         try:
             operation()
-        except (OSError, ValueError, json.JSONDecodeError, RegistryUnavailableError) as error:
+        except (
+            OSError,
+            ValueError,
+            TypeError,
+            KeyError,
+            json.JSONDecodeError,
+            RegistryUnavailableError,
+        ) as error:
             self.statusBar().showMessage("Operation failed")
             QMessageBox.critical(self, "Operation failed", str(error))
 
@@ -504,9 +511,17 @@ class BraveTweaksWindow(QMainWindow):
             lines.append(_ORIGIN_ONLY_MESSAGE)
         elif origin_present:
             lines.append(_SHARED_HIVE_MESSAGE)
+        if browser is not None and browser.product == PRODUCT_UNKNOWN:
+            lines.append(_UNCLASSIFIED_TARGET_MESSAGE)
         if show_details:
             if browser is None:
                 text = "Brave Origin was found, but regular Brave was not found."
+                icon = QMessageBox.Icon.Warning
+            elif browser.product == PRODUCT_UNKNOWN:
+                text = (
+                    f"Detected {len(installations)} Brave executable(s). "
+                    "The apply target could not be classified as Brave or Brave Origin."
+                )
                 icon = QMessageBox.Icon.Warning
             else:
                 text = f"Detected {len(installations)} Brave installation(s)."
@@ -707,12 +722,21 @@ class BraveTweaksWindow(QMainWindow):
             store.scope,
         )
         config = AppConfig(scope=self.scope.currentData())
+        backup_names: list[str] = []
+        seen_names: set[str] = set()
+        for item in plan:
+            if item.action == "skip":
+                continue
+            for name in (
+                item.policy.name,
+                item.registry_name or item.policy.name,
+                *item.extra_deletes,
+            ):
+                if name not in seen_names:
+                    seen_names.add(name)
+                    backup_names.append(name)
         backup = store.create_backup(
-            [
-                item.registry_name or item.policy.name
-                for item in plan
-                if item.action != "skip"
-            ],
+            backup_names,
             metadata={
                 "profile": profile.name,
                 "brave_version": brave_version,
@@ -799,11 +823,51 @@ class BraveTweaksWindow(QMainWindow):
         )
 
     def _restore_backup(self, path: Path) -> None:
-        store = RegistryStore(scope=self.scope.currentData())
+        scope = self.scope.currentData()
+        store = RegistryStore(scope=scope)
         payload = json.loads(path.read_text(encoding="utf-8"))
+        values = store.validate_backup(payload)
+        scope_label = self._scope_label(scope)
+        details = "\n".join(
+            f"{name}={saved['value']!r}"
+            if saved.get("exists")
+            else f"{name} (delete)"
+            for name, saved in sorted(values.items())
+        )
+        confirmation = QMessageBox(self)
+        confirmation.setIcon(QMessageBox.Icon.Question)
+        confirmation.setWindowTitle("Restore backup")
+        confirmation.setText(
+            f"Restore {len(values)} registry value(s) into {scope_label}?"
+        )
+        confirmation.setDetailedText(details)
+        confirmation.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if confirmation.exec() != QMessageBox.StandardButton.Yes:
+            self.statusBar().showMessage("Restore cancelled")
+            return
+
+        config = AppConfig(scope=scope)
+        backup = store.create_backup(
+            values,
+            metadata={
+                "operation": "restore",
+                "scope": scope,
+                "source": str(path),
+            },
+        )
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%SZ")
+        backup_path = config.backup_dir / f"pre-restore-{timestamp}.json"
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
+        backup_path.write_text(json.dumps(backup, indent=2), encoding="utf-8")
         store.restore(payload)
         self._load_policy_state()
-        self._show_message("Backup restored", f"Restored registry values from {path}")
+        self._show_message(
+            "Backup restored",
+            f"Restored registry values from {path}.",
+            details=f"Pre-restore backup written to {backup_path}",
+        )
         self.statusBar().showMessage("Backup restored")
 
 

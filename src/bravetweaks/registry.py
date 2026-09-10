@@ -47,8 +47,18 @@ class RegistryStore:
         except FileNotFoundError:
             return {}
 
-    def set_value(self, name: str, value: Any) -> None:
-        registry_type = winreg.REG_DWORD if isinstance(value, bool) or isinstance(value, int) else winreg.REG_SZ
+    def set_value(
+        self,
+        name: str,
+        value: Any,
+        registry_type: int | None = None,
+    ) -> None:
+        if registry_type is None:
+            registry_type = (
+                winreg.REG_DWORD
+                if isinstance(value, bool) or isinstance(value, int)
+                else winreg.REG_SZ
+            )
         stored_value = int(value) if isinstance(value, bool) else value
         try:
             with winreg.CreateKeyEx(self.hive, self.key_path, 0, winreg.KEY_WRITE) as key:
@@ -91,13 +101,36 @@ class RegistryStore:
             "values": values,
         }
 
-    def restore(self, payload: dict[str, Any]) -> None:
+    def validate_backup(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(payload, dict):
+            raise ValueError("Backup file is not a BraveTweaks backup.")
+        if payload.get("format_version") != 1:
+            raise ValueError("Backup format is not supported.")
         if payload.get("hive") != self.hive_name or payload.get("scope") != self.scope:
             raise ValueError("Backup scope does not match the selected registry scope.")
         if payload.get("key_path") != self.key_path:
             raise ValueError("Backup key does not match the Brave policy key.")
-        for name, saved in payload.get("values", {}).items():
+        values = payload.get("values")
+        if not isinstance(values, dict) or not values:
+            raise ValueError("Backup does not contain any registry values.")
+        for name, saved in values.items():
+            if not isinstance(name, str) or not name:
+                raise ValueError("Backup contains an invalid policy name.")
+            if not isinstance(saved, dict):
+                raise ValueError(f"Backup entry {name!r} is invalid.")
+            if saved.get("exists") and "value" not in saved:
+                raise ValueError(f"Backup entry {name!r} is missing a value.")
+        return values
+
+    def restore(self, payload: dict[str, Any]) -> None:
+        values = self.validate_backup(payload)
+        for name, saved in values.items():
             if saved.get("exists"):
-                self.set_value(name, saved["value"])
+                registry_type = saved.get("registry_type")
+                if registry_type is not None and not isinstance(registry_type, int):
+                    raise ValueError(
+                        f"Backup entry {name!r} has an invalid registry type."
+                    )
+                self.set_value(name, saved["value"], registry_type)
             else:
                 self.delete_value(name)
