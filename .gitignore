@@ -1,4 +1,6 @@
 /backups/
+build/
+dist/
 __pycache__/
 *.py[cod]
 
@@ -14,3 +16,5 @@ Thumbs.db
 Desktop.ini
 TODO.txt
 AGENTS.md
+BraveTweaks.spec
+assets/icon candidate.png
