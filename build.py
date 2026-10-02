@@ -59,7 +59,14 @@ def build() -> None:
     ]
 
     if ICON.is_file():
-        command.extend(["--icon", str(ICON)])
+        command.extend(
+            [
+                "--icon",
+                str(ICON),
+                "--add-data",
+                f"{ICON};.",
+            ]
+        )
         print(f"Using icon: {ICON}")
 
     command.append(str(ENTRYPOINT))

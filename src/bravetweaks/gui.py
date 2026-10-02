@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import ctypes
 import json
+import sys
 import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 from PySide6.QtCore import QTimer, Qt
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -35,6 +38,8 @@ from .elevation import ensure_elevated
 from .policies import CATEGORY_TITLES, PolicyDefinition, all_policies
 from .profile import OriginProfile, PlanItem
 from .registry import RegistryStore, RegistryUnavailableError
+
+_APP_USER_MODEL_ID = "BraveTweaks.BraveTweaks"
 
 _ORIGIN_ONLY_MESSAGE = (
     "BraveTweaks applies Windows policies to regular Brave. "
@@ -871,13 +876,46 @@ class BraveTweaksWindow(QMainWindow):
         self.statusBar().showMessage("Backup restored")
 
 
+def _icon_path() -> Path | None:
+    if getattr(sys, "frozen", False):
+        base = getattr(sys, "_MEIPASS", None)
+        candidate = Path(base) / "icon.ico" if base else None
+    else:
+        candidate = Path(__file__).resolve().parents[2] / "assets" / "icon.ico"
+    if candidate is not None and candidate.is_file():
+        return candidate
+    return None
+
+
+def _set_windows_app_id() -> None:
+    if sys.platform != "win32":
+        return
+    set_id = ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID
+    set_id.argtypes = [ctypes.c_wchar_p]
+    set_id.restype = ctypes.HRESULT
+    set_id(_APP_USER_MODEL_ID)
+
+
+def _apply_window_icon(app: QApplication, window: QMainWindow) -> None:
+    path = _icon_path()
+    if path is None:
+        return
+    icon = QIcon(str(path))
+    if icon.isNull():
+        return
+    app.setWindowIcon(icon)
+    window.setWindowIcon(icon)
+
+
 def launch() -> int:
+    _set_windows_app_id()
     if not ensure_elevated():
         return 1
 
     app = QApplication.instance() or QApplication([])
     app.setStyleSheet(_STYLE_SHEET)
     window = BraveTweaksWindow()
+    _apply_window_icon(app, window)
     window.show()
     QTimer.singleShot(0, window.centralWidget().setFocus)
     handle = window.windowHandle()
