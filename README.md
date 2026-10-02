@@ -18,15 +18,14 @@ BraveTweaks has a narrower focus: a beginner-friendly Windows 11 GUI for applyin
 
 ## Requirements
 
-- Windows 11
-- Python 3.10 or newer
-- PySide6, if using the desktop interface
+- Windows 11 x64
 - Brave installed for detection, unless policies are being staged for a future
   installation or the goal is only to inspect or restore registry values
 - Portapps Brave is supported for both User (HKCU) and Machine (HKLM) policies;
   selecting its portable `brave.exe` is optional
+- Python 3.10 or newer and PySide6, only when running from source
 
-Run from source with `main.pyw`. A PyInstaller exe will be added later.
+Download the 64-bit `BraveTweaks.exe` from [Releases](https://github.com/mirbyte/BraveTweaks/releases). It does not require Python. Running from source uses `main.pyw`.
 
 The default user-scope policy key is:
 
@@ -44,13 +43,15 @@ If a legacy `.reg` file previously configured Brave under `HKLM`, select Machine
 
 ## Usage
 
-Install the dependency once:
+Download `BraveTweaks.exe` from [Releases](https://github.com/mirbyte/BraveTweaks/releases) and run it. No command-line parameters are required or used. Windows will ask for administrator permission.
+
+To run from source instead, install the dependency once:
 
 ```console
 pip install -r requirements.txt
 ```
 
-Then double-click `main.pyw` in Windows Explorer. No command-line parameters are required or used.
+Then double-click `main.pyw` in Windows Explorer.
 
 Origin preset selects Origin's default-off set. Apply, Verify, and Restore require an explicit click. Apply reconciles the checked policy state: checked policies are set and unchecked managed policies are removed. With no policies selected, Apply opens the confirmed managed-policy reset flow. Remove managed policies deletes only known BraveTweaks policy values from the selected scope after confirmation and creates a backup first. Unknown values are left untouched.
 
