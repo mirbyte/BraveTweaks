@@ -25,7 +25,7 @@ BraveTweaks has a narrower focus: a beginner-friendly Windows 11 GUI for applyin
   selecting its portable `brave.exe` is optional
 - Python 3.10 or newer and PySide6, only when running from source
 
-Download the 64-bit `BraveTweaks.exe` from [Releases](https://github.com/mirbyte/BraveTweaks/releases). It does not require Python. Running from source uses `main.pyw`.
+Download the `BraveTweaks.exe` from [Releases](https://github.com/mirbyte/BraveTweaks/releases). It does not require Python. Running from source uses `main.pyw`.
 
 The default user-scope policy key is:
 
