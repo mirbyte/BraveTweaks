@@ -1,3 +1,8 @@
+[![License](https://img.shields.io/github/license/mirbyte/BraveTweaks?color=F15A22&labelColor=14191F&maxAge=604800)](https://raw.githubusercontent.com/mirbyte/BraveTweaks/HEAD/LICENSE)
+![Size](https://img.shields.io/github/repo-size/mirbyte/BraveTweaks?label=size&color=F15A22&labelColor=14191F&maxAge=86400)
+[![Download Count](https://img.shields.io/github/downloads/mirbyte/BraveTweaks/total?color=F15A22&labelColor=14191F&maxAge=86400)](https://github.com/mirbyte/BraveTweaks/releases)
+![LastCommit](https://img.shields.io/github/last-commit/mirbyte/BraveTweaks?color=F15A22&labelColor=14191F&label=repo+updated)
+
 # BraveTweaks
 
 BraveTweaks is a small Windows 11 utility for making a normal Brave installation behave as close as practical to Brave Origin, with a few additional optional policy controls.
